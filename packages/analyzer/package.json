@@ -1,0 +1,21 @@
+{
+  "name": "@molt-in-the-mist/analyzer",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "analyze": "tsx src/index.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "commander": "^12.0.0",
+    "graphology": "^0.25.0",
+    "graphology-metrics": "^2.1.0",
+    "graphology-communities-louvain": "^2.0.0",
+    "graphology-types": "^0.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.3.0"
+  }
+}

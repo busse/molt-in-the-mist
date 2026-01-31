@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Molt in the Mist — Moltbook Network Analysis</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Molt in the Mist</h1>
+      <p class="subtitle">Mapping influence in the AI agent social network</p>
+    </header>
+
+    <div class="main">
+      <aside class="sidebar left-sidebar">
+        <section class="control-group">
+          <h3>Search</h3>
+          <input type="text" id="search-input" placeholder="Find agent...">
+        </section>
+
+        <section class="control-group">
+          <h3>Influencer View</h3>
+          <div class="tier-buttons">
+            <button data-tier="elite" class="active">Elite (Top 100)</button>
+            <button data-tier="major">Major (Top 500)</button>
+            <button data-tier="expanded">+ Connections</button>
+            <button data-tier="custom">Custom</button>
+          </div>
+          <div class="custom-controls hidden">
+            <label>
+              Top N Agents: <input type="number" id="top-n" value="100" min="10" max="1000">
+            </label>
+            <label>
+              Min Influence Score: <span id="influence-value">0.50</span>
+              <input type="range" id="influence-slider" min="0" max="1" step="0.01" value="0.5">
+            </label>
+            <label>
+              <input type="checkbox" id="include-connections"> Include direct connections
+            </label>
+          </div>
+        </section>
+
+        <section class="control-group">
+          <h3>Spotlight</h3>
+          <div class="spotlight-search">
+            <input type="text" id="spotlight-input" placeholder="Spotlight an influencer...">
+            <button id="spotlight-btn">Focus</button>
+          </div>
+        </section>
+
+        <section class="control-group">
+          <h3>Filters</h3>
+          <label>
+            Min Degree: <span id="degree-value">0</span>
+            <input type="range" id="degree-slider" min="0" max="50" value="0">
+          </label>
+          <div id="community-filters"></div>
+        </section>
+
+        <section class="control-group">
+          <h3>Layout</h3>
+          <label>
+            Repulsion: <input type="range" id="charge-slider" min="10" max="500" value="120">
+          </label>
+          <label>
+            Link Distance: <input type="range" id="link-slider" min="10" max="200" value="60">
+          </label>
+          <div class="button-row">
+            <button id="freeze-btn">Freeze</button>
+            <button id="reset-btn">Reset View</button>
+          </div>
+        </section>
+
+        <section class="control-group">
+          <h3>Network Statistics</h3>
+          <dl id="network-stats">
+            <dt>Agents</dt><dd id="stat-agents">-</dd>
+            <dt>Connections</dt><dd id="stat-edges">-</dd>
+            <dt>Density</dt><dd id="stat-density">-</dd>
+            <dt>Communities</dt><dd id="stat-communities">-</dd>
+            <dt>Modularity</dt><dd id="stat-modularity">-</dd>
+            <dt>Influencers</dt><dd id="stat-influencers">-</dd>
+          </dl>
+        </section>
+      </aside>
+
+      <main class="graph-container" id="graph">
+        <div id="loading">
+          <div class="spinner"></div>
+          <p id="loading-status">Loading...</p>
+        </div>
+      </main>
+
+      <aside class="sidebar right-sidebar" id="details">
+        <h3>Influencer Leaderboard</h3>
+        <div id="leaderboard" class="leaderboard"></div>
+
+        <h3>Agent Details</h3>
+        <p class="placeholder">Click a node to see details</p>
+        <div class="agent-info hidden"></div>
+      </aside>
+    </div>
+
+    <footer>
+      <p>Data collected: <span id="collection-date">-</span> |
+         <a href="https://moltbook.com" target="_blank" rel="noopener">Visit Moltbook</a> |
+         <a href="https://github.com" target="_blank" rel="noopener">Source on GitHub</a></p>
+    </footer>
+  </div>
+
+  <!-- Tooltip -->
+  <div id="tooltip" class="tooltip hidden"></div>
+
+  <script type="module" src="./app.ts"></script>
+</body>
+</html>

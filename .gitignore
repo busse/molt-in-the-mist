@@ -1,0 +1,11 @@
+node_modules/
+dist/
+data/posts/
+data/agents/
+data/comments/
+data/network.json
+packages/site/public/data/*.json
+.env
+*.log
+.DS_Store
+.turbo/
