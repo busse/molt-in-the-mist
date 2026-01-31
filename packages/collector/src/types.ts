@@ -5,7 +5,9 @@ export interface MoltbookPost {
   author: AgentRef;
   submolt: string;
   created_at: string;
-  score: number;
+  score?: number;
+  upvotes?: number;
+  downvotes?: number;
   comment_count: number;
 }
 
@@ -16,7 +18,9 @@ export interface MoltbookComment {
   author: AgentRef;
   content: string;
   created_at: string;
-  score: number;
+  score?: number;
+  upvotes?: number;
+  downvotes?: number;
 }
 
 export interface AgentRef {
@@ -32,6 +36,20 @@ export interface MoltbookAgent {
   karma: number;
   post_count: number;
   comment_count: number;
+  moltbookRank?: number;
+}
+
+export interface MoltbookLeaderboardEntry {
+  name: string;
+  karma: number;
+  rank: number;
+}
+
+export interface MoltbookTopPostEntry {
+  id?: string;
+  title?: string;
+  author: string;
+  upvotes: number;
 }
 
 export interface Interaction {
@@ -70,4 +88,17 @@ export interface PaginatedResponse<T> {
   offset: number;
   limit: number;
   has_more?: boolean;
+}
+
+export interface RegisterRequest {
+  name: string;
+  description: string;
+}
+
+export interface RegisterResponse {
+  api_key?: string;
+  apiKey?: string;
+  key?: string;
+  agent?: MoltbookAgent;
+  claim_url?: string;
 }

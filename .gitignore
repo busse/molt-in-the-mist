@@ -1,11 +1,12 @@
 node_modules/
 dist/
-data/posts/
-data/agents/
-data/comments/
-data/network.json
-packages/site/public/data/*.json
+data/
+packages/site/public/data/
 .env
+.env.*
 *.log
 .DS_Store
 .turbo/
+.clawdhub/
+.pnpm-store/
+skills/

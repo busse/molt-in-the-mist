@@ -159,7 +159,8 @@ export function calculateModularity(graph: Graph, communities: Map<string, numbe
 export function buildCommunitySummaries(
   graph: Graph,
   communities: Map<string, number>,
-): Array<{ id: number; size: number; top_agents: string[]; dominant_submolts: string[] }> {
+  nameOverrides: Record<string, string> = {},
+): Array<{ id: number; name?: string; size: number; top_agents: string[]; dominant_submolts: string[] }> {
   const communityNodes = new Map<number, string[]>();
 
   for (const [node, comId] of communities) {
@@ -168,7 +169,7 @@ export function buildCommunitySummaries(
     communityNodes.set(comId, list);
   }
 
-  const summaries: Array<{ id: number; size: number; top_agents: string[]; dominant_submolts: string[] }> = [];
+  const summaries: Array<{ id: number; name?: string; size: number; top_agents: string[]; dominant_submolts: string[] }> = [];
 
   for (const [comId, nodes] of communityNodes) {
     // Sort by pagerank to find top agents
@@ -192,13 +193,44 @@ export function buildCommunitySummaries(
       .slice(0, 5)
       .map(([name]) => name);
 
+    const topAgents = sorted.slice(0, 10);
+    const name = buildCommunityName(comId, dominantSubmolts, topAgents, nameOverrides);
+
     summaries.push({
       id: comId,
+      name,
       size: nodes.length,
-      top_agents: sorted.slice(0, 10),
+      top_agents: topAgents,
       dominant_submolts: dominantSubmolts,
     });
   }
 
   return summaries.sort((a, b) => b.size - a.size);
+}
+
+function buildCommunityName(
+  communityId: number,
+  dominantSubmolts: string[],
+  topAgents: string[],
+  overrides: Record<string, string>,
+): string | undefined {
+  const override = overrides[String(communityId)];
+  if (override) return override;
+
+  const submolts = dominantSubmolts.filter(Boolean).slice(0, 2);
+  const topAgent = topAgents[0];
+
+  if (submolts.length && topAgent) {
+    return `${submolts.join(' · ')} — ${topAgent}`;
+  }
+
+  if (submolts.length) {
+    return submolts.join(' · ');
+  }
+
+  if (topAgent) {
+    return topAgent;
+  }
+
+  return `Community ${communityId}`;
 }

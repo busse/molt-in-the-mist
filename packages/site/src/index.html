@@ -4,28 +4,59 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Molt in the Mist — Moltbook Network Analysis</title>
+  
+  <!-- Editorial Typography Stack -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>Molt in the Mist</h1>
-      <p class="subtitle">Mapping influence in the AI agent social network</p>
+      <div class="masthead">
+        <div class="masthead-text">
+          <div class="masthead-wordmark">
+            <h1>Molt in the Mist</h1>
+            <div class="masthead-rule"></div>
+          </div>
+          <p class="masthead-tagline">Network Influence Analysis</p>
+        </div>
+        <nav class="primary-nav">
+          <a data-path="/">Graph</a>
+          <a data-path="/agents">Agents</a>
+          <a data-path="/posts">Posts</a>
+        </nav>
+      </div>
+      <div class="masthead-meta">
+        <span class="edition-date">January 31, 2026</span>
+        <a class="masthead-link" id="masthead-agent-link" href="https://www.moltbook.com" target="_blank" rel="noopener">
+          <span class="masthead-link-label" id="masthead-agent-label">Moltbook</span>
+          <span class="masthead-link-id" id="masthead-agent-id">Agent profile is local-only</span>
+        </a>
+      </div>
     </header>
 
     <div class="main">
       <aside class="sidebar left-sidebar">
         <section class="control-group">
-          <h3>Search</h3>
+          <div class="section-marker">
+            <span class="marker-number">01</span>
+            <h3>Search</h3>
+          </div>
           <input type="text" id="search-input" placeholder="Find agent...">
         </section>
 
         <section class="control-group">
-          <h3>Influencer View</h3>
+          <div class="section-marker">
+            <span class="marker-number">02</span>
+            <h3>View</h3>
+          </div>
           <div class="tier-buttons">
-            <button data-tier="elite" class="active">Elite (Top 100)</button>
-            <button data-tier="major">Major (Top 500)</button>
-            <button data-tier="expanded">+ Connections</button>
+            <button data-tier="elite" class="active">Elite 100</button>
+            <button data-tier="major">Major 500</button>
+            <button data-tier="expanded">+ Links</button>
             <button data-tier="custom">Custom</button>
           </div>
           <div class="custom-controls hidden">
@@ -33,55 +64,68 @@
               Top N Agents: <input type="number" id="top-n" value="100" min="10" max="1000">
             </label>
             <label>
-              Min Influence Score: <span id="influence-value">0.50</span>
+              Min Influence: <span id="influence-value">0.50</span>
               <input type="range" id="influence-slider" min="0" max="1" step="0.01" value="0.5">
             </label>
             <label>
-              <input type="checkbox" id="include-connections"> Include direct connections
+              <input type="checkbox" id="include-connections"> Include connections
             </label>
           </div>
         </section>
 
         <section class="control-group">
-          <h3>Spotlight</h3>
+          <div class="section-marker">
+            <span class="marker-number">03</span>
+            <h3>Spotlight</h3>
+          </div>
           <div class="spotlight-search">
             <input type="text" id="spotlight-input" placeholder="Spotlight an influencer...">
             <button id="spotlight-btn">Focus</button>
           </div>
+          <div id="spotlight-error" class="spotlight-error hidden">Agent not found</div>
         </section>
 
         <section class="control-group">
-          <h3>Filters</h3>
+          <div class="section-marker">
+            <span class="marker-number">04</span>
+            <h3>Filters</h3>
+          </div>
           <label>
-            Min Degree: <span id="degree-value">0</span>
+            Minimum Degree: <span id="degree-value">0</span>
             <input type="range" id="degree-slider" min="0" max="50" value="0">
           </label>
           <div id="community-filters"></div>
         </section>
 
         <section class="control-group">
-          <h3>Layout</h3>
+          <div class="section-marker">
+            <span class="marker-number">05</span>
+            <h3>Layout</h3>
+          </div>
           <label>
-            Repulsion: <input type="range" id="charge-slider" min="10" max="500" value="120">
+            Repulsion: <input type="range" id="charge-slider" min="10" max="500" value="200">
           </label>
           <label>
-            Link Distance: <input type="range" id="link-slider" min="10" max="200" value="60">
+            Link Distance: <input type="range" id="link-slider" min="10" max="200" value="80">
           </label>
           <div class="button-row">
             <button id="freeze-btn">Freeze</button>
-            <button id="reset-btn">Reset View</button>
+            <button id="reset-btn">Reset</button>
           </div>
         </section>
 
-        <section class="control-group">
-          <h3>Network Statistics</h3>
+        <section class="control-group stats-group">
+          <div class="section-marker">
+            <span class="marker-number">06</span>
+            <h3>Statistics</h3>
+          </div>
           <dl id="network-stats">
-            <dt>Agents</dt><dd id="stat-agents">-</dd>
-            <dt>Connections</dt><dd id="stat-edges">-</dd>
-            <dt>Density</dt><dd id="stat-density">-</dd>
-            <dt>Communities</dt><dd id="stat-communities">-</dd>
-            <dt>Modularity</dt><dd id="stat-modularity">-</dd>
-            <dt>Influencers</dt><dd id="stat-influencers">-</dd>
+            <dt>Agents</dt><dd id="stat-agents">—</dd>
+            <dt>Connections</dt><dd id="stat-edges">—</dd>
+            <dt>Density</dt><dd id="stat-density">—</dd>
+            <dt>Communities</dt><dd id="stat-communities">—</dd>
+            <dt>Modularity</dt><dd id="stat-modularity">—</dd>
+            <dt>Influencers</dt><dd id="stat-influencers">—</dd>
           </dl>
         </section>
       </aside>
@@ -89,24 +133,70 @@
       <main class="graph-container" id="graph">
         <div id="loading">
           <div class="spinner"></div>
-          <p id="loading-status">Loading...</p>
+          <p id="loading-status">Loading network data...</p>
         </div>
       </main>
 
+      <section class="content-container hidden" id="content-view">
+        <div class="content-header">
+          <h2 id="content-title">Content</h2>
+          <div id="content-actions"></div>
+        </div>
+        <div id="content-body"></div>
+      </section>
+
       <aside class="sidebar right-sidebar" id="details">
-        <h3>Influencer Leaderboard</h3>
+        <div class="section-marker section-marker-block">
+          <h3>Graph Layout</h3>
+        </div>
+        <div class="layout-controls">
+          <label>
+            Repulsion: <span id="layout-charge-value">200</span>
+            <input type="range" id="layout-charge-slider" min="10" max="500" value="200">
+          </label>
+          <label>
+            Link Distance: <span id="layout-link-value">80</span>
+            <input type="range" id="layout-link-slider" min="10" max="200" value="80">
+          </label>
+          <label>
+            Collision Padding: <span id="layout-collision-value">2</span>
+            <input type="range" id="layout-collision-slider" min="0" max="20" value="2">
+          </label>
+          <div class="button-row">
+            <button id="layout-freeze-btn">Freeze</button>
+            <button id="layout-reset-btn">Reset</button>
+          </div>
+        </div>
+
+        <div class="section-marker section-marker-block">
+          <h3>Leaderboard</h3>
+        </div>
+        <div class="leaderboard-toggle">
+          <button data-leaderboard="influence" class="active">Network Influence</button>
+          <button data-leaderboard="karma">Moltbook Karma</button>
+        </div>
         <div id="leaderboard" class="leaderboard"></div>
 
-        <h3>Agent Details</h3>
-        <p class="placeholder">Click a node to see details</p>
+        <div class="section-marker section-marker-block">
+          <h3>Agent Profile</h3>
+        </div>
+        <p class="placeholder">Select a node to view details</p>
         <div class="agent-info hidden"></div>
       </aside>
     </div>
 
     <footer>
-      <p>Data collected: <span id="collection-date">-</span> |
-         <a href="https://moltbook.com" target="_blank" rel="noopener">Visit Moltbook</a> |
-         <a href="https://github.com" target="_blank" rel="noopener">Source on GitHub</a></p>
+      <div class="footer-content">
+        <span class="footer-date">Data collected: <span id="collection-date">—</span></span>
+        <span class="footer-divider">·</span>
+        <span>Network topology from reply graph</span>
+        <span class="footer-divider">·</span>
+        <span>Karma data from Moltbook leaderboard</span>
+        <span class="footer-divider">·</span>
+        <a href="https://moltbook.com" target="_blank" rel="noopener">Moltbook</a>
+        <span class="footer-divider">·</span>
+        <a href="https://github.com/busse/molt-in-the-mist" target="_blank" rel="noopener">Source</a>
+      </div>
     </footer>
   </div>
 

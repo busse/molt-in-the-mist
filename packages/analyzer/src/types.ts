@@ -32,12 +32,14 @@ export interface MoltbookAgent {
   karma: number;
   post_count: number;
   comment_count: number;
+  moltbookRank?: number;
 }
 
 export interface NodeData {
   id: string;
   label: string;
   karma: number;
+  moltbookRank?: number;
   post_count: number;
   comment_count: number;
   submolts: string[];
@@ -71,6 +73,7 @@ export interface NetworkMetrics {
 
 export interface Community {
   id: number;
+  name?: string;
   size: number;
   top_agents: string[];
   dominant_submolts: string[];
@@ -113,6 +116,7 @@ export interface VisNode {
   size: number;
   community: number;
   karma: number;
+  moltbookRank?: number;
   posts: number;
   comments: number;
   submolts: string[];

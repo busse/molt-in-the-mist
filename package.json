@@ -2,6 +2,7 @@
   "name": "molt-in-the-mist",
   "private": true,
   "scripts": {
+    "register": "pnpm --filter @molt-in-the-mist/collector exec tsx src/index.ts register",
     "collect": "pnpm --filter @molt-in-the-mist/collector run collect",
     "analyze": "pnpm --filter @molt-in-the-mist/analyzer run analyze",
     "dev": "pnpm --filter @molt-in-the-mist/site run dev",

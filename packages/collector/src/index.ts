@@ -1,7 +1,12 @@
 import { Command } from 'commander';
+import dotenv from 'dotenv';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { Collector } from './collector.js';
+import { MoltbookApiClient } from './api-client.js';
 import type { CollectorConfig } from './types.js';
+
+dotenv.config();
 
 const program = new Command();
 
@@ -46,6 +51,78 @@ program
 
     const collector = new Collector(config);
     await collector.run();
+  });
+
+program
+  .command('register')
+  .description('Register a new agent with Moltbook and receive an API key')
+  .requiredOption('-n, --name <name>', 'Agent name')
+  .requiredOption('-d, --description <desc>', 'Agent description')
+  .option('--save', 'Save the API key to .env in the project root', false)
+  .action(async (options) => {
+    const client = new MoltbookApiClient();
+
+    console.log('Molt-in-the-Mist — Agent Registration');
+    console.log(`  Registering agent: ${options.name}`);
+    console.log('');
+
+    try {
+      const result = await client.registerAgent({
+        name: options.name,
+        description: options.description,
+      });
+
+      const apiKey = result.api_key ?? result.apiKey ?? result.key;
+      const agentName = result.agent?.name ?? options.name;
+      const claimUrl = result.claim_url;
+
+      console.log('Registration successful!');
+      console.log('');
+      console.log(`  Agent:   ${agentName}`);
+      console.log(`  API Key: ${apiKey ?? '(not returned)'}`);
+      if (claimUrl) {
+        console.log(`  Claim:   ${claimUrl}`);
+        console.log('');
+        console.log('  Your human must visit the claim URL to complete verification.');
+      }
+
+      if (apiKey) {
+        console.log('');
+        console.log('  WARNING: Save your API key now. It cannot be retrieved later.');
+        console.log('  Only send your API key to https://www.moltbook.com (with www).');
+      } else if (!claimUrl) {
+        console.log('');
+        console.log('  NOTE: Moltbook did not return an API key or claim URL.');
+        console.log('  If this seems wrong, retry later or check the Moltbook portal.');
+      }
+
+      if (options.save && apiKey) {
+        const repoRoot = process.env.INIT_CWD || process.cwd();
+        const envPath = path.resolve(repoRoot, '.env');
+        const envLine = `MOLTBOOK_API_KEY=${apiKey}\n`;
+
+        if (fs.existsSync(envPath)) {
+          const existing = fs.readFileSync(envPath, 'utf-8');
+          if (existing.includes('MOLTBOOK_API_KEY=')) {
+            const updated = existing.replace(/^MOLTBOOK_API_KEY=.*$/m, `MOLTBOOK_API_KEY=${apiKey}`);
+            fs.writeFileSync(envPath, updated, 'utf-8');
+          } else {
+            fs.appendFileSync(envPath, envLine, 'utf-8');
+          }
+        } else {
+          fs.writeFileSync(envPath, envLine, 'utf-8');
+        }
+        console.log(`  Saved to ${envPath}`);
+      } else if (!options.save && apiKey) {
+        console.log('');
+        console.log('  To use with the collector, set:');
+        console.log(`    export MOLTBOOK_API_KEY=${apiKey}`);
+        console.log('  Or add to your .env file.');
+      }
+    } catch (error) {
+      console.error(`Registration failed: ${error instanceof Error ? error.message : error}`);
+      process.exit(1);
+    }
   });
 
 program.parse();

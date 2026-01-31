@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { buildGraph } from './graph-builder.js';
 import { calculateAllMetrics } from './metrics.js';
 import { detectCommunities, calculateModularity, buildCommunitySummaries } from './community.js';
@@ -47,15 +48,17 @@ program
     // Load data
     console.log('Loading collected data...');
     const { posts, comments, agents } = loadData(config.inputDir, config.verbose);
+    const leaderboard = loadLeaderboard(config.inputDir, config.verbose);
+    const mergedAgents = mergeAgentsWithLeaderboard(agents, leaderboard);
 
     console.log(`  Posts:    ${posts.length}`);
     console.log(`  Comments: ${comments.length}`);
-    console.log(`  Agents:   ${agents.length}`);
+    console.log(`  Agents:   ${mergedAgents.length}`);
     console.log('');
 
     // Build graph
     console.log('Building interaction graph...');
-    const graph = buildGraph(posts, comments, agents);
+    const graph = buildGraph(posts, comments, mergedAgents);
     console.log(`  Nodes: ${graph.order}`);
     console.log(`  Edges: ${graph.size}`);
     console.log('');
@@ -75,7 +78,8 @@ program
     }
     const modularity = calculateModularity(graph, communityMap);
     networkMetrics.modularity = modularity;
-    const communities = buildCommunitySummaries(graph, communityMap);
+    const communityNameOverrides = loadCommunityNameOverrides();
+    const communities = buildCommunitySummaries(graph, communityMap, communityNameOverrides);
     console.log(`  Communities found: ${communities.length}`);
     console.log(`  Modularity: ${modularity.toFixed(4)}`);
     console.log('');
@@ -122,6 +126,14 @@ program
       fs.writeFileSync(tierPath, JSON.stringify(tierData, null, 2));
       console.log(`  ${tier}.json: ${tierData.nodes.length} nodes, ${tierData.links.length} links`);
     }
+
+    // Export entity indexes for SPA lists/details
+    const agentsIndex = buildAgentIndex(mergedAgents, influencerProfiles);
+    const postsIndex = buildPostIndex(posts);
+    writeJson(path.join(config.outputDir, 'agents.json'), agentsIndex);
+    writeJson(path.join(config.outputDir, 'posts.json'), postsIndex);
+    console.log(`  agents.json: ${agentsIndex.length} agents`);
+    console.log(`  posts.json: ${postsIndex.length} posts`);
 
     console.log('\nAnalysis complete.');
   });
@@ -184,4 +196,152 @@ function loadData(inputDir: string, verbose: boolean): {
   return { posts, comments, agents };
 }
 
+function loadLeaderboard(
+  inputDir: string,
+  verbose: boolean,
+): Array<{ name: string; karma: number; rank: number }> {
+  const leaderboardPath = path.join(inputDir, 'moltbook-leaderboard.json');
+  if (!fs.existsSync(leaderboardPath)) return [];
+
+  try {
+    const data = JSON.parse(fs.readFileSync(leaderboardPath, 'utf-8'));
+    if (!Array.isArray(data)) return [];
+    return data
+      .filter(entry => entry?.name)
+      .map(entry => ({
+        name: String(entry.name),
+        karma: Number(entry.karma ?? 0),
+        rank: Number(entry.rank ?? 0),
+      }))
+      .filter(entry => entry.name && entry.rank > 0);
+  } catch (err) {
+    if (verbose) {
+      console.warn(`  Error loading moltbook leaderboard: ${(err as Error).message}`);
+    }
+    return [];
+  }
+}
+
+function mergeAgentsWithLeaderboard(
+  agents: MoltbookAgent[],
+  leaderboard: Array<{ name: string; karma: number; rank: number }>,
+): MoltbookAgent[] {
+  const agentMap = new Map(agents.map(agent => [agent.name, { ...agent }]));
+
+  for (const entry of leaderboard) {
+    const existing = agentMap.get(entry.name);
+    if (existing) {
+      existing.karma = Math.max(existing.karma ?? 0, entry.karma ?? 0);
+      existing.moltbookRank = entry.rank;
+      agentMap.set(entry.name, existing);
+    } else {
+      agentMap.set(entry.name, {
+        name: entry.name,
+        display_name: entry.name,
+        created_at: '',
+        karma: entry.karma ?? 0,
+        post_count: 0,
+        comment_count: 0,
+        moltbookRank: entry.rank,
+      });
+    }
+  }
+
+  return [...agentMap.values()];
+}
+
 program.parse();
+
+function loadCommunityNameOverrides(): Record<string, string> {
+  const overrides: Record<string, string> = {};
+  const currentFile = fileURLToPath(import.meta.url);
+  const currentDir = path.dirname(currentFile);
+  const overridesPath = path.join(currentDir, '../config/community-names.json');
+
+  if (!fs.existsSync(overridesPath)) return overrides;
+
+  try {
+    const raw = JSON.parse(fs.readFileSync(overridesPath, 'utf-8'));
+    if (!raw || typeof raw !== 'object') return overrides;
+
+    for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+      if (typeof value === 'string' && value.trim()) {
+        overrides[key] = value.trim();
+      }
+    }
+  } catch (err) {
+    console.warn(`Warning: failed to load community name overrides: ${(err as Error).message}`);
+  }
+
+  return overrides;
+}
+
+function writeJson(filePath: string, data: unknown): void {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+function buildAgentIndex(
+  agents: MoltbookAgent[],
+  profiles: Array<{ agentName: string; influenceScore: number; rank: number; tier: string; metrics?: { communities?: number[] } }>,
+): Array<{
+  id: string;
+  name: string;
+  display_name: string;
+  created_at: string;
+  karma: number;
+  post_count: number;
+  comment_count: number;
+  moltbookRank?: number;
+  influenceScore?: number;
+  influenceRank?: number;
+  tier?: string;
+  communities?: number[];
+}> {
+  const profileMap = new Map(profiles.map(profile => [profile.agentName, profile]));
+
+  return agents.map(agent => {
+    const profile = profileMap.get(agent.name);
+    return {
+      id: agent.name,
+      name: agent.name,
+      display_name: agent.display_name,
+      created_at: agent.created_at,
+      karma: agent.karma,
+      post_count: agent.post_count,
+      comment_count: agent.comment_count,
+      moltbookRank: agent.moltbookRank,
+      influenceScore: profile?.influenceScore,
+      influenceRank: profile?.rank,
+      tier: profile?.tier,
+      communities: profile?.metrics?.communities,
+    };
+  });
+}
+
+function buildPostIndex(posts: MoltbookPost[]): Array<{
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  author: { name: string; display_name?: string } | null;
+  submolt?: string;
+  comment_count: number;
+  score?: number;
+  upvotes?: number;
+  downvotes?: number;
+  url?: string | null;
+}> {
+  return posts.map(post => ({
+    id: post.id,
+    title: post.title ?? '',
+    content: post.content ?? '',
+    created_at: post.created_at,
+    author: post.author ? { name: post.author.name, display_name: post.author.display_name } : null,
+    submolt: post.submolt,
+    comment_count: post.comment_count ?? 0,
+    score: post.score,
+    upvotes: (post as MoltbookPost & { upvotes?: number }).upvotes,
+    downvotes: (post as MoltbookPost & { downvotes?: number }).downvotes,
+    url: (post as MoltbookPost & { url?: string | null }).url ?? null,
+  }));
+}

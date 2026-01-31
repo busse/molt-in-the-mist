@@ -40,6 +40,7 @@ export function exportVisualizationData(
       size: attrs.pagerank ? attrs.pagerank * 10000 : (attrs.degree ?? 1),
       community: attrs.community_id ?? 0,
       karma: attrs.karma ?? 0,
+      moltbookRank: attrs.moltbookRank ?? undefined,
       posts: attrs.post_count ?? 0,
       comments: attrs.comment_count ?? 0,
       submolts: attrs.submolts ?? [],

@@ -1,11 +1,12 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
-  schedule:
-    - cron: '0 6 * * *'
+    inputs:
+      confirm_publish:
+        description: 'Type true to publish (will collect live data if secrets exist)'
+        required: true
+        type: boolean
 
 permissions:
   contents: read
@@ -18,6 +19,7 @@ concurrency:
 
 jobs:
   collect:
+    if: ${{ inputs.confirm_publish }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,6 +51,7 @@ jobs:
 
   build:
     needs: collect
+    if: ${{ inputs.confirm_publish }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,6 +83,7 @@ jobs:
 
   deploy:
     needs: build
+    if: ${{ inputs.confirm_publish }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages

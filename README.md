@@ -1,20 +1,42 @@
 # molt-in-the-mist
 
-Social network analysis tool for studying the [Moltbook](https://moltbook.com) AI agent community. Identifies influencers, maps interaction networks, and visualizes community structure through an interactive force-directed graph.
+Research toolkit for legitimate Moltbook data collection and social network
+analysis by registered AI agents. It helps researchers explore influence,
+community structure, and interaction dynamics without republishing Moltbook data.
 
-## Architecture
+## Research Tool Only
 
-Monorepo with three packages:
+This project is not a hosted service and must never ship real Moltbook data.
+Collected data stays local under `data/` and build artifacts under
+`packages/site/public/data/` (both gitignored). Treat outputs as sensitive.
 
-- **`@molt-in-the-mist/collector`** — CLI tool that scrapes posts, comments, and agent profiles from the Moltbook API using an influencer-first collection strategy
-- **`@molt-in-the-mist/analyzer`** — Builds a directed interaction graph, calculates SNA metrics (PageRank, betweenness, closeness, clustering), runs Louvain community detection, and computes composite influence scores
-- **`@molt-in-the-mist/site`** — Interactive D3.js force-directed graph visualization with influencer leaderboard, spotlight mode, tier-based views, and filtering controls. Deployed to GitHub Pages.
+If you run the collector or analyzer, do not commit data, logs, or `.env`.
+See `SECURITY.md` and `docs/data-handling.md` for the full checklist.
+
+## Who This Is For
+
+Curious and creative researchers who want a responsible framework for:
+
+- Registering an AI agent on Moltbook and requesting an API key.
+- Collecting data via official APIs under their own credentials.
+- Running network analysis and producing local visualizations.
+- Sharing aggregated insights without leaking raw content.
+
+## How It Works
+
+1. Register an agent and claim the API key.
+2. Collect Moltbook posts, comments, and profiles locally.
+3. Analyze interactions to compute network metrics and communities.
+4. Visualize the results in a local D3-based explorer.
 
 ## Quick Start
 
 ```bash
 # Install dependencies
 pnpm install
+
+# Register an agent and request an API key
+pnpm register -- --name "my-agent" --description "Social graph analysis agent" --save
 
 # Collect data from Moltbook (needs API key)
 export MOLTBOOK_API_KEY=moltbook_...
@@ -25,80 +47,33 @@ pnpm analyze
 
 # Start development server for visualization
 pnpm dev
-
-# Build for production
-pnpm build
-
-# Full pipeline: collect -> analyze -> build
-pnpm pipeline
 ```
 
-## Collector CLI
+Optional: to show your local agent name in the UI masthead, create
+`packages/site/.env.local` with:
 
 ```bash
-# Influencer-first mode (default): targets top influencers first
-pnpm collect -- --mode influencer-first --top 200
-
-# Full collection mode
-pnpm collect -- --mode full
-
-# Target specific submolts
-pnpm collect -- --submolts crustafarianism,aita,introductions
-
-# Customize pagination
-pnpm collect -- --max-pages 20 --page-size 50
-
-# Verbose logging
-pnpm collect -- --verbose
+VITE_MOLTBOOK_AGENT_NAME=YourAgentName
 ```
 
-## Analyzer CLI
+## Guides
 
-```bash
-# Default: top 100 influencers (elite tier)
-pnpm analyze
+- `docs/researcher-quickstart.md` — step-by-step workflow, from registration to analysis
+- `docs/data-handling.md` — data safety, redaction, and sharing guidelines
+- `docs/visualization-tour.md` — how to read the graph and export figures
 
-# Expanded view: influencers + their direct connections
-pnpm analyze -- --tier expanded --include-connections
+## Packages
 
-# Community view: top 20 per community
-pnpm analyze -- --tier community
+- `@molt-in-the-mist/collector` — CLI collection tool (influencer-first by default)
+- `@molt-in-the-mist/analyzer` — graph building, metrics, community detection
+- `@molt-in-the-mist/site` — local visualization UI (force-directed graph)
 
-# Custom threshold
-pnpm analyze -- --tier custom --min-score 0.3 --top 500
-```
+## Responsible Sharing
 
-## Influence Scoring
-
-Each agent receives a composite score from weighted metrics:
-
-| Metric | Weight | Signal |
-|--------|--------|--------|
-| PageRank | 0.30 | Network position importance |
-| In-Degree | 0.25 | Direct attention received |
-| Karma | 0.15 | Platform-native reputation |
-| Post Count | 0.10 | Content creation volume |
-| Reply Rate | 0.10 | Engagement magnetism |
-| Betweenness | 0.10 | Community bridge role |
-
-Agents are ranked into tiers: **Elite** (top 100), **Major** (top 500), **Rising** (top 5%), and **Active** (everyone else).
-
-## Visualization Features
-
-- **Tier-based views**: Elite, Major, Expanded (+connections), Custom
-- **Force-directed graph**: D3.js with zoom, pan, drag
-- **Node encoding**: Size = influence score, Color = community
-- **Spotlight mode**: Click any influencer to see their ego network
-- **Leaderboard**: Top 20 influencers ranked by composite score
-- **Detail panel**: Full metrics, connections, and community info per agent
-- **Filters**: Minimum degree, community, search
-- **Layout controls**: Repulsion strength, link distance, freeze/unfreeze
-
-## Deployment
-
-The site deploys to GitHub Pages via the workflow in `.github/workflows/deploy.yml`. It runs daily at 06:00 UTC to re-collect data and rebuild.
-
-Set the `MOLTBOOK_API_KEY` repository secret for automated collection.
+You can safely share aggregated insights and sanitized visuals, but never raw
+content, raw IDs, or exports that can be rehydrated into user data. If in doubt,
+do not publish. The GitHub Pages workflow is disabled by default to prevent
+accidental release of collected data.
 
 ## Project Structure
 
@@ -106,9 +81,10 @@ Set the `MOLTBOOK_API_KEY` repository secret for automated collection.
 molt-in-the-mist/
 ├── packages/
 │   ├── collector/src/     # API client, rate limiter, collection orchestration
-│   ├── analyzer/src/      # Graph building, metrics, community detection, influence scoring
-│   └── site/src/          # D3 visualization, controls, tooltips, styles
+│   ├── analyzer/src/      # Graph building, metrics, community detection
+│   └── site/src/          # Visualization, controls, styles
 ├── data/                  # Raw collected data (gitignored)
+├── docs/                  # Researcher guides and data handling
 ├── .github/workflows/     # GitHub Actions deployment
 ├── pnpm-workspace.yaml
 ├── turbo.json

@@ -8,14 +8,35 @@ export interface ForceGraphConfig {
   maxRadius: number;
   linkDistance: number;
   chargeStrength: number;
+  collisionPadding: number;
 }
 
+// Editorial Warm Color Palette
+// Inspired by NatGeo, Economist, Monocle - earth tones with strategic accents
 const COMMUNITY_COLORS = [
-  '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f',
-  '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac',
-  '#86bcb6', '#8cd17d', '#b6992d', '#499894', '#d37295',
-  '#a0cbe8', '#ffbe7d', '#8b8b8b', '#d4a6c8', '#fabfd2',
+  '#B85C38',  // Terra cotta
+  '#2C3E50',  // Deep slate blue
+  '#8B7355',  // Olive brown
+  '#C19A6B',  // Ochre
+  '#5D6D7E',  // Steel blue
+  '#A0522D',  // Sienna
+  '#708090',  // Slate gray
+  '#D4A853',  // NatGeo gold
+  '#6B8E6B',  // Sage green
+  '#8B4513',  // Saddle brown
+  '#4A5568',  // Cool gray
+  '#9C8060',  // Taupe
+  '#7B8B6F',  // Moss
+  '#A67B5B',  // French beige
+  '#5F6A6A',  // Charcoal
+  '#CD853F',  // Peru
+  '#6E8B74',  // Cambridge green
+  '#8D7B68',  // Shadow
+  '#9E7B6C',  // Beaver
+  '#7F9A8B',  // Morning blue
 ];
+
+const DEFAULT_ZOOM = 1.2;
 
 export class ForceGraph {
   private svg!: d3.Selection<SVGSVGElement, unknown, HTMLElement, unknown>;
@@ -39,8 +60,9 @@ export class ForceGraph {
       height: 700,
       minRadius: 3,
       maxRadius: 30,
-      linkDistance: 60,
-      chargeStrength: -120,
+      linkDistance: 80,
+      chargeStrength: -200,
+      collisionPadding: 2,
       ...config,
     };
 
@@ -91,6 +113,7 @@ export class ForceGraph {
 
     this.svg.call(zoom);
     this.mainGroup = this.svg.append('g').attr('class', 'main');
+    this.svg.call(zoom.transform as any, d3.zoomIdentity.scale(DEFAULT_ZOOM));
   }
 
   private createSimulation(): void {
@@ -101,7 +124,7 @@ export class ForceGraph {
         .strength(d => Math.min((d.weight ?? 1) / 10, 1)))
       .force('charge', d3.forceManyBody<VisNode>().strength(this.config.chargeStrength))
       .force('center', d3.forceCenter(this.config.width / 2, this.config.height / 2))
-      .force('collision', d3.forceCollide<VisNode>().radius(d => this.radiusScale(d.size) + 2));
+      .force('collision', d3.forceCollide<VisNode>().radius(d => this.radiusScale(d.size) + this.config.collisionPadding));
   }
 
   private drawLinks(): void {
@@ -110,9 +133,9 @@ export class ForceGraph {
       .selectAll<SVGLineElement, VisLink>('line')
       .data(this.links)
       .join('line')
-      .attr('stroke', '#555')
-      .attr('stroke-opacity', d => Math.min(0.1 + (d.weight ?? 1) / 20, 0.6))
-      .attr('stroke-width', d => Math.max(0.5, Math.sqrt(d.weight ?? 1)));
+      .attr('stroke', '#8A8A8A')
+      .attr('stroke-opacity', d => Math.min(0.15 + (d.weight ?? 1) / 25, 0.5))
+      .attr('stroke-width', d => Math.max(0.5, Math.sqrt(d.weight ?? 1) * 0.8));
   }
 
   private drawNodes(): void {
@@ -123,8 +146,8 @@ export class ForceGraph {
       .join('circle')
       .attr('r', d => this.radiusScale(d.size))
       .attr('fill', d => this.colorScale(d.community % COMMUNITY_COLORS.length))
-      .attr('stroke', d => d.tier === 'elite' ? '#ffd700' : d.tier === 'major' ? '#c0c0c0' : '#333')
-      .attr('stroke-width', d => d.tier === 'elite' ? 2.5 : d.tier === 'major' ? 1.5 : 0.5)
+      .attr('stroke', d => d.tier === 'elite' ? '#D4A853' : d.tier === 'major' ? '#5C5C5C' : '#D4CFC6')
+      .attr('stroke-width', d => d.tier === 'elite' ? 3 : d.tier === 'major' ? 2 : 1)
       .style('cursor', 'pointer')
       .call(this.drag())
       .on('click', (_event: MouseEvent, d: VisNode) => {
@@ -149,11 +172,12 @@ export class ForceGraph {
       .selectAll<SVGTextElement, VisNode>('text')
       .data(labelNodes)
       .join('text')
-      .attr('font-size', 10)
-      .attr('font-family', 'monospace')
-      .attr('fill', '#e0e0e0')
-      .attr('dx', d => this.radiusScale(d.size) + 4)
-      .attr('dy', 3)
+      .attr('font-size', 11)
+      .attr('font-family', "'DM Sans', 'Helvetica Neue', sans-serif")
+      .attr('font-weight', 500)
+      .attr('fill', '#1A1A1A')
+      .attr('dx', d => this.radiusScale(d.size) + 5)
+      .attr('dy', 4)
       .text(d => d.label);
   }
 
@@ -192,6 +216,25 @@ export class ForceGraph {
   }
 
   // === Public API ===
+
+  updateData(data: Pick<VisualizationData, 'nodes' | 'links'>): void {
+    this.nodes = data.nodes;
+    this.links = data.links;
+
+    this.buildRadiusScale();
+
+    this.simulation.nodes(this.nodes);
+    (this.simulation.force('link') as d3.ForceLink<VisNode, VisLink>).links(this.links);
+    (this.simulation.force('collision') as d3.ForceCollide<VisNode>)
+      .radius(d => this.radiusScale(d.size) + this.config.collisionPadding);
+
+    this.mainGroup.selectAll('*').remove();
+    this.drawLinks();
+    this.drawNodes();
+    this.drawLabels();
+
+    this.simulation.alpha(0.6).restart();
+  }
 
   setNodeClickHandler(handler: (node: VisNode) => void): void {
     this.onNodeClick = handler;
@@ -234,6 +277,10 @@ export class ForceGraph {
     this.zoomToNode(agentId);
   }
 
+  clearSpotlight(): void {
+    this.resetHighlight();
+  }
+
   resetHighlight(): void {
     this.nodeElements
       .transition()
@@ -244,7 +291,7 @@ export class ForceGraph {
     this.linkElements
       .transition()
       .duration(400)
-      .attr('opacity', d => Math.min(0.1 + (d.weight ?? 1) / 20, 0.6));
+      .attr('opacity', d => Math.min(0.15 + (d.weight ?? 1) / 25, 0.5));
 
     this.labelElements
       .transition()
@@ -309,6 +356,13 @@ export class ForceGraph {
     this.simulation.alpha(0.3).restart();
   }
 
+  setCollisionPadding(padding: number): void {
+    this.config.collisionPadding = padding;
+    (this.simulation.force('collision') as d3.ForceCollide<VisNode>)
+      .radius(d => this.radiusScale(d.size) + padding);
+    this.simulation.alpha(0.3).restart();
+  }
+
   toggleSimulation(): boolean {
     this.frozen = !this.frozen;
     if (this.frozen) {
@@ -325,7 +379,7 @@ export class ForceGraph {
       .call(
         d3.zoom<SVGSVGElement, unknown>()
           .transform as any,
-        d3.zoomIdentity,
+        d3.zoomIdentity.scale(DEFAULT_ZOOM),
       );
     this.resetHighlight();
   }

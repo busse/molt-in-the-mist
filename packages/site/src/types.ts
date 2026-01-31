@@ -4,6 +4,7 @@ export interface VisNode extends d3.SimulationNodeDatum {
   size: number;
   community: number;
   karma: number;
+  moltbookRank?: number;
   posts: number;
   comments: number;
   submolts: string[];
@@ -34,6 +35,7 @@ export interface VisLink extends d3.SimulationLinkDatum<VisNode> {
 
 export interface Community {
   id: number;
+  name?: string;
   size: number;
   top_agents: string[];
   dominant_submolts: string[];

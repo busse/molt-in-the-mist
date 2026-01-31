@@ -26,6 +26,7 @@ export function buildGraph(
     graph.addNode(name, {
       label: agentData?.display_name ?? name,
       karma: agentData?.karma ?? 0,
+      moltbookRank: agentData?.moltbookRank ?? undefined,
       post_count: agentData?.post_count ?? 0,
       comment_count: agentData?.comment_count ?? 0,
       submolts: [] as string[],
