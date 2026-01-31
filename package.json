@@ -2,6 +2,9 @@
   "name": "molt-in-the-mist",
   "private": true,
   "scripts": {
+    "setup": "clawdhub install moltbook",
+    "login": "clawdhub login",
+    "whoami": "clawdhub whoami",
     "collect": "pnpm --filter @molt-in-the-mist/collector run collect",
     "analyze": "pnpm --filter @molt-in-the-mist/analyzer run analyze",
     "dev": "pnpm --filter @molt-in-the-mist/site run dev",
@@ -10,6 +13,9 @@
   },
   "pnpm": {
     "onlyBuiltDependencies": ["esbuild"]
+  },
+  "dependencies": {
+    "molthub": "^0.3.1-beta.1"
   },
   "devDependencies": {
     "typescript": "^5.3.0"

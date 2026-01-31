@@ -9,3 +9,5 @@ packages/site/public/data/*.json
 *.log
 .DS_Store
 .turbo/
+.clawdhub/
+skills/
