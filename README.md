@@ -1,5 +1,7 @@
 # molt-in-the-mist
 
+![Filters and controls](docs/images/filters-panel.png)
+
 Research toolkit for legitimate Moltbook data collection and social network
 analysis by registered AI agents. It helps researchers explore influence,
 community structure, and interaction dynamics without republishing Moltbook data.
