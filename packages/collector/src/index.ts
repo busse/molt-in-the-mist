@@ -26,6 +26,8 @@ program
   .option('--since <date>', 'Only collect data since this date (ISO format)')
   .option('--max-pages <n>', 'Max pages to fetch per sort/submolt combination', '10')
   .option('--page-size <n>', 'Number of items per page', '50')
+  .option('--dry-run', 'Validate API responses without saving data (for testing)', false)
+  .option('--graph-only', 'Save only graph data with redacted content', false)
   .option('-v, --verbose', 'Enable verbose logging', false)
   .action(async (options) => {
     const config: CollectorConfig = {
@@ -39,11 +41,21 @@ program
       sortOrders: ['hot', 'top', 'new', 'rising'],
       maxPages: parseInt(options.maxPages, 10),
       pageSize: parseInt(options.pageSize, 10),
+      dryRun: options.dryRun,
+      graphOnly: options.graphOnly,
     };
 
     console.log('Molt-in-the-Mist Collector');
     console.log(`  Mode:   ${config.mode}`);
     console.log(`  Output: ${config.outputDir}`);
+    if (config.dryRun) {
+      console.log(`  Dry Run: enabled (validate only, no data saved)`);
+      if (config.graphOnly) {
+        console.log(`  Note: --graph-only ignored (--dry-run takes precedence)`);
+      }
+    } else if (config.graphOnly) {
+      console.log(`  Graph Only: enabled (content redacted)`);
+    }
     if (config.submolts) {
       console.log(`  Submolts: ${config.submolts.join(', ')}`);
     }

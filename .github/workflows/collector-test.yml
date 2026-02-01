@@ -1,0 +1,139 @@
+name: Collector API Test
+
+# Manual workflow only - not triggered automatically
+# This validates API connectivity without saving data
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Collection mode'
+        required: true
+        type: choice
+        options:
+          - influencer-first
+          - full
+        default: 'influencer-first'
+      max_pages:
+        description: 'Max pages to test (keep low to minimize API calls)'
+        required: true
+        type: number
+        default: 2
+      page_size:
+        description: 'Items per page'
+        required: true
+        type: number
+        default: 10
+      submolts:
+        description: 'Submolts to test (comma-separated, leave empty for all)'
+        required: false
+        type: string
+        default: ''
+
+# Minimal permissions for security
+permissions:
+  contents: read
+
+jobs:
+  test-collector:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run collector in dry-run mode
+        id: collector_test
+        run: |
+          echo "## Collector API Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Mode:** ${{ inputs.mode }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Max Pages:** ${{ inputs.max_pages }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Page Size:** ${{ inputs.page_size }}" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ inputs.submolts }}" ]; then
+            echo "**Submolts:** ${{ inputs.submolts }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Build the command
+          CMD="pnpm collect -- --dry-run --mode ${{ inputs.mode }} --max-pages ${{ inputs.max_pages }} --page-size ${{ inputs.page_size }}"
+          if [ -n "${{ inputs.submolts }}" ]; then
+            CMD="$CMD --submolts ${{ inputs.submolts }}"
+          fi
+          
+          echo "**Command:** \`$CMD\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Output" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          
+          # Run the collector and capture output
+          set +e  # Don't fail on error, we want to capture output
+          $CMD 2>&1 | tee collector_output.log
+          COLLECTOR_EXIT_CODE=$?
+          set -e
+          
+          # Add output to summary (last 100 lines to avoid size limits)
+          tail -100 collector_output.log >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $COLLECTOR_EXIT_CODE -eq 0 ]; then
+            echo "✅ **Status:** Success" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Status:** Failed (exit code: $COLLECTOR_EXIT_CODE)" >> $GITHUB_STEP_SUMMARY
+            exit $COLLECTOR_EXIT_CODE
+          fi
+        env:
+          MOLTBOOK_API_KEY: ${{ secrets.MOLTBOOK_API_KEY }}
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: collector-test-logs-${{ github.run_number }}
+          path: collector_output.log
+          retention-days: 30
+
+      - name: Create test report
+        if: always()
+        run: |
+          echo "# Collector API Test Report" > test_report.md
+          echo "" >> test_report.md
+          echo "**Run ID:** ${{ github.run_id }}" >> test_report.md
+          echo "**Run Number:** ${{ github.run_number }}" >> test_report.md
+          echo "**Triggered by:** ${{ github.actor }}" >> test_report.md
+          echo "**Date:** $(date -u +"%Y-%m-%d %H:%M:%S UTC")" >> test_report.md
+          echo "" >> test_report.md
+          echo "## Configuration" >> test_report.md
+          echo "- **Mode:** ${{ inputs.mode }}" >> test_report.md
+          echo "- **Max Pages:** ${{ inputs.max_pages }}" >> test_report.md
+          echo "- **Page Size:** ${{ inputs.page_size }}" >> test_report.md
+          if [ -n "${{ inputs.submolts }}" ]; then
+            echo "- **Submolts:** ${{ inputs.submolts }}" >> test_report.md
+          fi
+          echo "" >> test_report.md
+          echo "## Full Output" >> test_report.md
+          echo "\`\`\`" >> test_report.md
+          cat collector_output.log >> test_report.md
+          echo "\`\`\`" >> test_report.md
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: collector-test-report-${{ github.run_number }}
+          path: test_report.md
+          retention-days: 30

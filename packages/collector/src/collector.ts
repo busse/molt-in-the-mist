@@ -11,6 +11,9 @@ import type {
   MoltbookTopPostEntry,
 } from './types.js';
 
+// Redaction format for graph-only mode
+const REDACTION_SUFFIX = '-redacted';
+
 export class Collector {
   private client: MoltbookApiClient;
   private config: CollectorConfig;
@@ -329,7 +332,23 @@ export class Collector {
     }
   }
 
+  private redactPost(post: MoltbookPost): MoltbookPost {
+    return {
+      ...post,
+      title: `Title-${post.id}${REDACTION_SUFFIX}`,
+      content: `Content-${post.id}${REDACTION_SUFFIX}`,
+    };
+  }
+
+  private redactComment(comment: MoltbookComment): MoltbookComment {
+    return {
+      ...comment,
+      content: `Comment-${comment.id}${REDACTION_SUFFIX}`,
+    };
+  }
+
   private ensureOutputDirs(): void {
+    if (this.config.dryRun) return; // Skip directory creation in dry-run mode
     const dirs = ['posts', 'agents', 'comments'];
     for (const dir of dirs) {
       const fullPath = path.join(this.config.outputDir, dir);
@@ -358,37 +377,53 @@ export class Collector {
   }
 
   private savePost(post: MoltbookPost): void {
+    if (this.config.dryRun) return; // Skip saving in dry-run mode
+    const postToSave = this.config.graphOnly ? this.redactPost(post) : post;
     const filePath = path.join(this.config.outputDir, 'posts', `${post.id}.json`);
-    fs.writeFileSync(filePath, JSON.stringify(post, null, 2));
+    fs.writeFileSync(filePath, JSON.stringify(postToSave, null, 2));
   }
 
   private savePostComments(postId: string, comments: MoltbookComment[]): void {
+    if (this.config.dryRun) return; // Skip saving in dry-run mode
+    const commentsToSave = this.config.graphOnly 
+      ? comments.map(c => this.redactComment(c))
+      : comments;
     const filePath = path.join(this.config.outputDir, 'comments', `${postId}.json`);
-    fs.writeFileSync(filePath, JSON.stringify(comments, null, 2));
+    fs.writeFileSync(filePath, JSON.stringify(commentsToSave, null, 2));
   }
 
   private saveAllComments(): void {
+    if (this.config.dryRun) return; // Skip saving in dry-run mode
     const commentsArray = [...this.comments.values()];
+    const commentsToSave = this.config.graphOnly
+      ? commentsArray.map(c => this.redactComment(c))
+      : commentsArray;
     const filePath = path.join(this.config.outputDir, 'comments', 'all-comments.json');
-    fs.writeFileSync(filePath, JSON.stringify(commentsArray, null, 2));
+    fs.writeFileSync(filePath, JSON.stringify(commentsToSave, null, 2));
   }
 
   private saveAgent(agent: MoltbookAgent): void {
+    if (this.config.dryRun) return; // Skip saving in dry-run mode
     const filePath = path.join(this.config.outputDir, 'agents', `${agent.name}.json`);
     fs.writeFileSync(filePath, JSON.stringify(agent, null, 2));
   }
 
   private saveLeaderboard(entries: Array<{ name: string; karma: number; rank: number }>): void {
+    if (this.config.dryRun) return; // Skip saving in dry-run mode
     const filePath = path.join(this.config.outputDir, 'moltbook-leaderboard.json');
     fs.writeFileSync(filePath, JSON.stringify(entries, null, 2));
   }
 
   private saveTopPosts(entries: MoltbookTopPostEntry[]): void {
+    if (this.config.dryRun) return; // Skip saving in dry-run mode
     const filePath = path.join(this.config.outputDir, 'moltbook-top-posts.json');
     fs.writeFileSync(filePath, JSON.stringify(entries, null, 2));
   }
 
   private loadState(): CollectorState {
+    if (this.config.dryRun) {
+      return { postsCollected: 0, commentsCollected: 0, agentsCollected: 0 };
+    }
     const statePath = path.join(this.config.outputDir, 'collector-state.json');
     if (fs.existsSync(statePath)) {
       return JSON.parse(fs.readFileSync(statePath, 'utf-8'));
@@ -397,6 +432,7 @@ export class Collector {
   }
 
   private saveState(): void {
+    if (this.config.dryRun) return; // Skip saving in dry-run mode
     const statePath = path.join(this.config.outputDir, 'collector-state.json');
     const state: CollectorState = {
       lastRun: new Date().toISOString(),
@@ -412,7 +448,15 @@ export class Collector {
     console.log(`  Posts:    ${this.posts.size}`);
     console.log(`  Comments: ${this.comments.size}`);
     console.log(`  Agents:   ${this.agents.size}`);
-    console.log(`  Output:   ${this.config.outputDir}`);
+    // Note: dry-run takes precedence over graph-only
+    if (this.config.dryRun) {
+      console.log(`  Mode:     Dry Run (validation only, no data saved)`);
+    } else {
+      if (this.config.graphOnly) {
+        console.log(`  Mode:     Graph Only (content redacted)`);
+      }
+      console.log(`  Output:   ${this.config.outputDir}`);
+    }
   }
 
   private async collectMoltbookLeaderboard(): Promise<void> {
