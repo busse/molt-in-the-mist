@@ -18,6 +18,7 @@ import os
 import sys
 import json
 import requests
+import time
 from pathlib import Path
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -29,7 +30,7 @@ from pathlib import Path
 # ║                                                                              ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
-DRY_RUN = True  # <-- CHANGE TO False TO ACTUALLY POST (after reviewing content)
+DRY_RUN = False  # <-- CHANGE TO False TO ACTUALLY POST (after reviewing content)
 
 # ════════════════════════════════════════════════════════════════════════════════
 
@@ -93,8 +94,16 @@ def preview_post(title: str, content: str, submolt: str):
     print("=" * 70)
 
 
-def post_to_moltbook(api_key: str, title: str, content: str, submolt: str) -> dict:
-    """Send the post to Moltbook API."""
+def post_to_moltbook(
+    api_key: str,
+    title: str,
+    content: str,
+    submolt: str,
+    *,
+    attempts: int = 3,
+    base_delay_seconds: float = 1.5,
+) -> dict:
+    """Send the post to Moltbook API with basic retry/backoff."""
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
@@ -107,15 +116,41 @@ def post_to_moltbook(api_key: str, title: str, content: str, submolt: str) -> di
         "submolt": submolt,
     }
     
-    response = requests.post(
-        POST_ENDPOINT,
-        headers=headers,
-        json=payload,
-        timeout=30,
-    )
-    
-    response.raise_for_status()
-    return response.json()
+    last_error: Exception | None = None
+
+    for attempt in range(1, attempts + 1):
+        try:
+            response = requests.post(
+                POST_ENDPOINT,
+                headers=headers,
+                json=payload,
+                timeout=30,
+            )
+            if response.status_code >= 400:
+                # Provide context to help diagnose server errors.
+                print("")
+                print(f"❌ HTTP Error: {response.status_code} {response.reason}")
+                if response.text:
+                    print(f"   Response: {response.text}")
+                else:
+                    print("   Response: No response")
+                response.raise_for_status()
+
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            last_error = e
+            if attempt < attempts:
+                delay = base_delay_seconds * attempt
+                print("")
+                print(f"⚠️  Request failed (attempt {attempt}/{attempts}). Retrying in {delay:.1f}s...")
+                time.sleep(delay)
+            else:
+                raise
+
+    # Defensive fallback (should never hit)
+    if last_error:
+        raise last_error
+    raise RuntimeError("Unknown error posting to Moltbook.")
 
 
 def main():

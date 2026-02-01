@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import PQueue from 'p-queue';
 import { MoltbookApiClient } from './api-client.js';
 import type {
   CollectorConfig,
@@ -31,26 +32,31 @@ export class Collector {
   }
 
   async run(): Promise<void> {
-    this.ensureOutputDirs();
-    this.registerShutdownHook();
+    try {
+      this.ensureOutputDirs();
+      this.registerShutdownHook();
 
-    await this.collectMoltbookLeaderboard();
-    await this.collectMoltbookTopPosts();
+      await this.collectMoltbookLeaderboard();
+      await this.collectMoltbookTopPosts();
 
-    if (this.config.mode === 'influencer-first') {
-      await this.collectInfluencerFirst();
-    } else {
-      await this.collectFull();
+      if (this.config.mode === 'influencer-first') {
+        await this.collectInfluencerFirst();
+      } else {
+        await this.collectFull();
+      }
+
+      this.saveState();
+      this.printSummary();
+    } finally {
+      await this.client.close();
     }
-
-    this.saveState();
-    this.printSummary();
   }
 
   private async collectFull(): Promise<void> {
     console.log('Starting full collection...');
     await this.collectPosts();
     await this.collectCommentsForPosts();
+    await this.backfillAuthorsFromSite();
     await this.collectAgentProfiles();
   }
 
@@ -65,7 +71,10 @@ export class Collector {
     // Rank authors by total engagement on their posts
     const authorEngagement = new Map<string, number>();
     for (const post of this.posts.values()) {
-      const authorName = post.author.name;
+      const authorName = post.author?.name;
+      if (!authorName) {
+        continue;
+      }
       const current = authorEngagement.get(authorName) ?? 0;
       const score = post.score ?? (post.upvotes ?? 0) - (post.downvotes ?? 0);
       authorEngagement.set(authorName, current + (post.comment_count ?? 0) + score);
@@ -94,9 +103,70 @@ export class Collector {
     console.log('Phase 3: Collecting comments to map interactions...');
     await this.collectCommentsForPosts();
 
+    // Phase 3.5: Backfill author identities via HTML fallback
+    await this.backfillAuthorsFromSite();
+
     // Phase 4: Collect profiles for agents discovered in comments
     console.log('Phase 4: Collecting profiles for discovered agents...');
     await this.collectAgentProfiles();
+  }
+
+  private async backfillAuthorsFromSite(): Promise<void> {
+    const missingPosts = [...this.posts.values()].filter(post => !post.author?.name);
+    if (!missingPosts.length) return;
+
+    console.log(`  Backfilling authors for ${missingPosts.length} posts via Playwright...`);
+
+    const commentsByPost = new Map<string, MoltbookComment[]>();
+    for (const comment of this.comments.values()) {
+      const list = commentsByPost.get(comment.post_id) ?? [];
+      list.push(comment);
+      commentsByPost.set(comment.post_id, list);
+    }
+
+    const queue = new PQueue({ concurrency: 2 });
+    let processed = 0;
+
+    for (const post of missingPosts) {
+      queue.add(async () => {
+        const result = await this.client.getPostAuthorsFromSite(post.id);
+        if (!result) return;
+
+        const { postAuthor, commentAuthors } = result;
+        let updated = false;
+
+        if (postAuthor) {
+          post.author = { name: postAuthor };
+          this.trackAgent(post.author);
+          this.savePost(post);
+          updated = true;
+        }
+
+        if (commentAuthors.size) {
+          const postComments = commentsByPost.get(post.id);
+          if (postComments) {
+            for (const comment of postComments) {
+              const authorName = commentAuthors.get(comment.id);
+              if (authorName) {
+                comment.author = { name: authorName };
+                this.trackAgent(comment.author);
+                updated = true;
+              }
+            }
+            this.savePostComments(post.id, postComments);
+          }
+        }
+
+        processed++;
+        if (updated && (this.config.verbose || processed % 25 === 0 || processed === missingPosts.length)) {
+          console.log(`    [${processed}/${missingPosts.length}] Backfilled ${post.id}`);
+        }
+      });
+    }
+
+    await queue.onIdle();
+    this.saveAllComments();
+    this.saveState();
   }
 
   private async collectPosts(): Promise<void> {
@@ -253,7 +323,7 @@ export class Collector {
     }
   }
 
-  private trackAgent(ref: { name: string; display_name?: string }): void {
+  private trackAgent(ref?: { name: string; display_name?: string } | null): void {
     if (ref?.name) {
       this.seenAgentNames.add(ref.name);
     }

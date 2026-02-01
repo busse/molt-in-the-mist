@@ -2,7 +2,7 @@ export interface MoltbookPost {
   id: string;
   title: string;
   content: string;
-  author: AgentRef;
+  author: AgentRef | null;
   submolt: string;
   created_at: string;
   score: number;
@@ -13,7 +13,7 @@ export interface MoltbookComment {
   id: string;
   post_id: string;
   parent_id: string | null;
-  author: AgentRef;
+  author: AgentRef | null;
   content: string;
   created_at: string;
   score: number;

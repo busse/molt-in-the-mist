@@ -1,4 +1,5 @@
 import * as cheerio from 'cheerio';
+import type { Browser, Page } from 'playwright';
 import { TokenBucketRateLimiter } from './rate-limiter.js';
 import type {
   MoltbookPost,
@@ -16,6 +17,7 @@ export class MoltbookApiClient {
   private rateLimiter: TokenBucketRateLimiter;
   private apiKey?: string;
   private verbose: boolean;
+  private playwrightBrowser?: Browser;
 
   constructor(options: { apiKey?: string; verbose?: boolean } = {}) {
     this.rateLimiter = new TokenBucketRateLimiter(90, 90, 60_000);
@@ -85,9 +87,115 @@ export class MoltbookApiClient {
     return response.text();
   }
 
+  private async getPlaywrightBrowser(): Promise<Browser> {
+    if (this.playwrightBrowser) return this.playwrightBrowser;
+    const { chromium } = await import('playwright');
+    this.playwrightBrowser = await chromium.launch({ headless: true });
+    return this.playwrightBrowser;
+  }
+
+  private async withPlaywrightPage<T>(fn: (page: Page) => Promise<T>): Promise<T> {
+    const browser = await this.getPlaywrightBrowser();
+    const page = await browser.newPage({
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      locale: 'en-US',
+    });
+    try {
+      return await fn(page);
+    } finally {
+      await page.close();
+    }
+  }
+
   private parseNumber(value: string): number {
     const cleaned = value.replace(/[^0-9]/g, '');
     return cleaned ? parseInt(cleaned, 10) : 0;
+  }
+
+  private extractAuthorName(value: unknown): string | undefined {
+    if (!value) return undefined;
+    if (typeof value === 'string') return value.trim() || undefined;
+    if (typeof value !== 'object') return undefined;
+
+    const record = value as Record<string, unknown>;
+    const candidates = [
+      record.name,
+      record.username,
+      record.handle,
+      record.author,
+      record.author_name,
+      record.authorName,
+      record.display_name,
+      record.displayName,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim()) {
+        return candidate.trim();
+      }
+    }
+    return undefined;
+  }
+
+  private extractAuthorsFromNextData(nextData: unknown, postId: string): {
+    postAuthor?: string;
+    commentAuthors: Map<string, string>;
+  } | null {
+    if (!nextData || typeof nextData !== 'object') return null;
+
+    const commentAuthors = new Map<string, string>();
+    let postAuthor: string | undefined;
+
+    const visit = (node: unknown) => {
+      if (!node) return;
+      if (Array.isArray(node)) {
+        for (const item of node) visit(item);
+        return;
+      }
+      if (typeof node !== 'object') return;
+
+      const record = node as Record<string, unknown>;
+      const nodeId = typeof record.id === 'string' ? record.id : undefined;
+      const nodePostId =
+        typeof record.post_id === 'string'
+          ? record.post_id
+          : typeof record.postId === 'string'
+            ? record.postId
+            : undefined;
+      const content = record.content ?? record.body ?? record.text;
+
+      if (nodeId === postId && (record.title || record.content)) {
+        const authorName = this.extractAuthorName(
+          record.author ??
+            record.author_name ??
+            record.authorName ??
+            record.user ??
+            record.agent ??
+            record.creator,
+        );
+        if (authorName && !postAuthor) {
+          postAuthor = authorName;
+        }
+      }
+
+      if (nodeId && nodePostId === postId && (content || record.created_at || record.createdAt)) {
+        const authorName = this.extractAuthorName(
+          record.author ?? record.author_name ?? record.authorName ?? record.user ?? record.agent,
+        );
+        if (authorName) {
+          commentAuthors.set(nodeId, authorName);
+        }
+      }
+
+      for (const value of Object.values(record)) {
+        visit(value);
+      }
+    };
+
+    visit(nextData);
+
+    if (!postAuthor && commentAuthors.size === 0) return null;
+    return { postAuthor, commentAuthors };
   }
 
   private parseTopAgentsFromHtml(html: string): Array<{ name: string; karma: number; rank: number }> {
@@ -152,6 +260,42 @@ export class MoltbookApiClient {
     }
 
     return entries.filter(entry => entry.author);
+  }
+
+  async getPostAuthorsFromSite(postId: string): Promise<{
+    postAuthor?: string;
+    commentAuthors: Map<string, string>;
+  } | null> {
+    const urls = [`${BASE_SITE_URL}/posts/${postId}`, `${BASE_SITE_URL}/p/${postId}`];
+
+    for (const url of urls) {
+      try {
+        const result = await this.withPlaywrightPage(async page => {
+          await page.goto(url, { waitUntil: 'networkidle' });
+          const nextDataText = await page.evaluate(() => {
+            const el = document.getElementById('__NEXT_DATA__');
+            return el?.textContent ?? null;
+          });
+          if (!nextDataText) return null;
+          const nextData = JSON.parse(nextDataText);
+          return this.extractAuthorsFromNextData(nextData, postId);
+        });
+
+        if (result) return result;
+      } catch (err) {
+        if (this.verbose) {
+          console.error(`    Playwright scrape failed for ${url}:`, (err as Error).message);
+        }
+      }
+    }
+
+    return null;
+  }
+
+  async close(): Promise<void> {
+    if (!this.playwrightBrowser) return;
+    await this.playwrightBrowser.close();
+    this.playwrightBrowser = undefined;
   }
 
   private parseProfileFromHtml(html: string): { karma?: number; created_at?: string } {
