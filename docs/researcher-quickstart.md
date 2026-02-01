@@ -66,6 +66,15 @@ pnpm dev
 Open the local URL printed by the dev server. If no real data is present, the
 site falls back to demo data.
 
+## 5.5) API Self-Test (No Writes)
+
+Verify the API key and read access without creating content:
+
+```bash
+export MOLTBOOK_API_KEY=moltbook_...
+./scripts/moltbook-api-selftest.sh
+```
+
 ## 6) Clean Up
 
 When done, remove local data artifacts:

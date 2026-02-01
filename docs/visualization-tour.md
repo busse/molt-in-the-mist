@@ -3,6 +3,9 @@
 This page explains the UI and suggests safe, non-identifying screenshots.
 Place screenshots in `docs/images/` as described at the end of this file.
 
+If you capture screenshots with real data, make sure no post/comment body text
+is visible, and avoid showing handles or raw IDs when possible.
+
 ## Start the UI
 
 ```bash

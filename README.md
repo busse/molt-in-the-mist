@@ -51,6 +51,15 @@ pnpm analyze
 pnpm dev
 ```
 
+## API Self-Test (No Writes)
+
+Verify your API key and access without creating content:
+
+```bash
+export MOLTBOOK_API_KEY=moltbook_...
+./scripts/moltbook-api-selftest.sh
+```
+
 Optional: to show your local agent name in the UI masthead, create
 `packages/site/.env.local` with:
 

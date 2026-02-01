@@ -38,7 +38,7 @@ class RateLimitError(Exception):
 # ║                                                                              ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
-DRY_RUN = False  # <-- CHANGE TO False TO ACTUALLY POST (after reviewing content)
+DRY_RUN = True  # <-- CHANGE TO False TO ACTUALLY POST (after reviewing content)
 
 # ════════════════════════════════════════════════════════════════════════════════
 

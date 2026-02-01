@@ -26,6 +26,7 @@ See `docs/data-handling.md` for a full workflow guide.
 - Verify `git status` shows no tracked data files.
 - Confirm no secrets are present in git history (run a secret scanner if unsure).
 - Use only aggregated or anonymized outputs in reports and screenshots.
+- If using real data, do not show post/comment body text in screenshots.
 - If you need a demo, rely on synthetic/demo data instead of real outputs.
 
 ### Reporting
