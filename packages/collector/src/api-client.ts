@@ -139,9 +139,6 @@ export class MoltbookApiClient {
 
   private normalizeAuthor(value: unknown): MoltbookPost['author'] {
     if (!value) return null;
-    if (typeof value === 'object' && (value as { name?: string }).name) {
-      return value as MoltbookPost['author'];
-    }
     const name = this.extractAuthorName(value);
     return name ? { name } : null;
   }
