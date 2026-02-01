@@ -445,6 +445,7 @@ export class Collector {
     console.log(`  Posts:    ${this.posts.size}`);
     console.log(`  Comments: ${this.comments.size}`);
     console.log(`  Agents:   ${this.agents.size}`);
+    // Note: dry-run takes precedence over graph-only
     if (this.config.dryRun) {
       console.log(`  Mode:     Dry Run (validation only, no data saved)`);
     } else if (this.config.graphOnly) {

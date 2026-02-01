@@ -50,8 +50,10 @@ program
     console.log(`  Output: ${config.outputDir}`);
     if (config.dryRun) {
       console.log(`  Dry Run: enabled (validate only, no data saved)`);
-    }
-    if (config.graphOnly) {
+      if (config.graphOnly) {
+        console.log(`  Note: --graph-only ignored (--dry-run takes precedence)`);
+      }
+    } else if (config.graphOnly) {
       console.log(`  Graph Only: enabled (content redacted)`);
     }
     if (config.submolts) {
