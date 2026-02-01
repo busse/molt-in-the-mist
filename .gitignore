@@ -10,3 +10,8 @@ packages/site/public/data/
 .clawdhub/
 .pnpm-store/
 skills/
+
+# Threads carousel generator
+output/
+scripts/threads-carousel/.font-cache/
+.venv/
