@@ -29,6 +29,10 @@ on:
         type: string
         default: ''
 
+# Minimal permissions for security
+permissions:
+  contents: read
+
 jobs:
   test-collector:
     runs-on: ubuntu-latest
