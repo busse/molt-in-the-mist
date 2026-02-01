@@ -451,10 +451,10 @@ export class Collector {
     // Note: dry-run takes precedence over graph-only
     if (this.config.dryRun) {
       console.log(`  Mode:     Dry Run (validation only, no data saved)`);
-    } else if (this.config.graphOnly) {
-      console.log(`  Mode:     Graph Only (content redacted)`);
-      console.log(`  Output:   ${this.config.outputDir}`);
     } else {
+      if (this.config.graphOnly) {
+        console.log(`  Mode:     Graph Only (content redacted)`);
+      }
       console.log(`  Output:   ${this.config.outputDir}`);
     }
   }
