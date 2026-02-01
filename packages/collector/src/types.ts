@@ -73,6 +73,8 @@ export interface CollectorConfig {
   sortOrders: Array<'hot' | 'new' | 'top' | 'rising'>;
   maxPages: number;
   pageSize: number;
+  dryRun: boolean;
+  graphOnly: boolean;
 }
 
 export interface CollectorState {
