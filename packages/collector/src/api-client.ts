@@ -137,6 +137,15 @@ export class MoltbookApiClient {
     return undefined;
   }
 
+  private normalizeAuthor(value: unknown): MoltbookPost['author'] {
+    if (!value) return null;
+    if (typeof value === 'object' && (value as { name?: string }).name) {
+      return value as MoltbookPost['author'];
+    }
+    const name = this.extractAuthorName(value);
+    return name ? { name } : null;
+  }
+
   private extractAuthorsFromNextData(nextData: unknown, postId: string): {
     postAuthor?: string;
     commentAuthors: Map<string, string>;
@@ -328,11 +337,19 @@ export class MoltbookApiClient {
 
     const walk = (comment: any, parentId?: string | null) => {
       if (!comment || !comment.id) return;
+      const author = this.normalizeAuthor(
+        comment.author ??
+          comment.author_name ??
+          comment.authorName ??
+          comment.user ??
+          comment.agent ??
+          comment.creator,
+      );
       const normalized: MoltbookComment = {
         id: comment.id,
         post_id: postId,
         parent_id: comment.parent_id ?? parentId ?? null,
-        author: comment.author,
+        author,
         content: comment.content,
         created_at: comment.created_at,
         score: comment.score,
@@ -362,12 +379,21 @@ export class MoltbookApiClient {
   }
 
   private normalizePost(post: any): MoltbookPost {
+    const author = this.normalizeAuthor(
+      post.author ??
+        post.author_name ??
+        post.authorName ??
+        post.user ??
+        post.agent ??
+        post.creator,
+    );
     return {
       ...post,
       submolt: this.normalizeSubmolt(post.submolt),
       score: post.score,
       upvotes: post.upvotes,
       downvotes: post.downvotes,
+      author,
     } as MoltbookPost;
   }
 
@@ -397,18 +423,50 @@ export class MoltbookApiClient {
 
   async getPost(id: string): Promise<MoltbookPost & { comments?: MoltbookComment[] }> {
     const result = await this.request<any>(`/posts/${id}`);
-    if (result?.post) {
-      const comments = Array.isArray(result.comments)
-        ? this.flattenComments(result.post.id, result.comments)
-        : Array.isArray(result.post.comments)
-          ? this.flattenComments(result.post.id, result.post.comments)
-          : [];
-      return { ...this.normalizePost(result.post), comments };
+    const post = result?.post ?? result;
+    if (!post) return result;
+
+    let comments: MoltbookComment[] = [];
+    const rawComments = Array.isArray(result?.comments)
+      ? result.comments
+      : Array.isArray(result?.post?.comments)
+        ? result.post.comments
+        : null;
+
+    if (rawComments) {
+      comments = this.flattenComments(post.id, rawComments);
+    } else {
+      try {
+        const commentResult = await this.request<any>(`/posts/${id}/comments`);
+        const commentItems = Array.isArray(commentResult)
+          ? commentResult
+          : Array.isArray(commentResult?.comments)
+            ? commentResult.comments
+            : Array.isArray(commentResult?.data)
+              ? commentResult.data
+              : [];
+        comments = this.flattenComments(post.id, commentItems);
+      } catch (err) {
+        if (this.verbose) {
+          console.error(`    Failed to fetch comments for post ${id}:`, (err as Error).message);
+        }
+      }
     }
-    return result;
+
+    return { ...this.normalizePost(post), comments };
   }
 
   async getAgent(name: string): Promise<MoltbookAgent> {
+    try {
+      const profile = await this.request<any>('/agents/profile', { name });
+      if (profile?.agent) return profile.agent;
+      if (profile?.success && profile.agent) return profile.agent;
+    } catch (err) {
+      if (this.verbose) {
+        console.error(`    Profile lookup failed for ${name}:`, (err as Error).message);
+      }
+    }
+
     const result = await this.request<any>(`/agents/${name}`);
     if (result?.agent) return result.agent;
     return result;
@@ -490,9 +548,11 @@ export class MoltbookApiClient {
     return [];
   }
 
-  async search(query: string, type?: 'posts' | 'agents' | 'submolts'): Promise<unknown> {
+  async search(query: string, type?: 'posts' | 'comments' | 'all' | 'agents' | 'submolts'): Promise<unknown> {
     const params: Record<string, string | number> = { q: query };
-    if (type) params.type = type;
+    const normalizedType =
+      type === 'agents' || type === 'submolts' ? undefined : type;
+    if (normalizedType) params.type = normalizedType;
     return this.request('/search', params);
   }
 

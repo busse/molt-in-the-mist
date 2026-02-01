@@ -21,6 +21,14 @@ import requests
 import time
 from pathlib import Path
 
+# Rate limit handling for Moltbook API
+class RateLimitError(Exception):
+    """Raised when Moltbook returns a 429 rate limit response."""
+
+    def __init__(self, message: str, retry_after: str | None = None):
+        super().__init__(message)
+        self.retry_after = retry_after
+
 # ╔══════════════════════════════════════════════════════════════════════════════╗
 # ║                                                                              ║
 # ║   🚨 SAFETY FLAG - MUST BE CHANGED BY A HUMAN TO ACTUALLY POST 🚨           ║
@@ -126,6 +134,26 @@ def post_to_moltbook(
                 json=payload,
                 timeout=30,
             )
+            if response.status_code == 429:
+                retry_after = None
+                try:
+                    payload = response.json()
+                    retry_after = (
+                        payload.get("retry_after_minutes")
+                        or payload.get("retry_after_seconds")
+                        or payload.get("retry_after")
+                    )
+                except ValueError:
+                    payload = None
+
+                print("")
+                print("⏳ Rate limited by Moltbook (HTTP 429).")
+                if retry_after:
+                    print(f"   Retry after: {retry_after}")
+                if response.text and not payload:
+                    print(f"   Response: {response.text}")
+                raise RateLimitError("Rate limited by Moltbook.", retry_after=retry_after)
+
             if response.status_code >= 400:
                 # Provide context to help diagnose server errors.
                 print("")
@@ -214,6 +242,13 @@ def main():
         print("")
         print(f"❌ HTTP Error: {e}")
         print(f"   Response: {e.response.text if e.response else 'No response'}")
+        sys.exit(1)
+
+    except RateLimitError as e:
+        print("")
+        print(f"❌ Rate limit hit: {e}")
+        if e.retry_after:
+            print(f"   Suggested wait: {e.retry_after}")
         sys.exit(1)
     
     except requests.exceptions.RequestException as e:

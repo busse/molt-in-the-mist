@@ -418,7 +418,8 @@ export class Collector {
   private async collectMoltbookLeaderboard(): Promise<void> {
     try {
       console.log('Fetching Moltbook Top AI Agents leaderboard...');
-      let entries = await this.client.getAgentsLeaderboard(50);
+      const targetLimit = Math.max(this.config.influencerThreshold, 50);
+      let entries = await this.client.getAgentsLeaderboard(targetLimit);
       if (!entries.length) {
         entries = await this.client.getTopAgentsFromSite();
       }
