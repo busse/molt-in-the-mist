@@ -11,6 +11,9 @@ import type {
   MoltbookTopPostEntry,
 } from './types.js';
 
+// Redaction format for graph-only mode
+const REDACTION_SUFFIX = '-redacted';
+
 export class Collector {
   private client: MoltbookApiClient;
   private config: CollectorConfig;
@@ -332,15 +335,15 @@ export class Collector {
   private redactPost(post: MoltbookPost): MoltbookPost {
     return {
       ...post,
-      title: `Title-${post.id}-rdctd`,
-      content: `Content-${post.id}-rdctd`,
+      title: `Title-${post.id}${REDACTION_SUFFIX}`,
+      content: `Content-${post.id}${REDACTION_SUFFIX}`,
     };
   }
 
   private redactComment(comment: MoltbookComment): MoltbookComment {
     return {
       ...comment,
-      content: `Comment-${comment.id}-rdctd`,
+      content: `Comment-${comment.id}${REDACTION_SUFFIX}`,
     };
   }
 

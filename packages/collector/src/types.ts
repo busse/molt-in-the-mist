@@ -73,7 +73,18 @@ export interface CollectorConfig {
   sortOrders: Array<'hot' | 'new' | 'top' | 'rising'>;
   maxPages: number;
   pageSize: number;
+  /**
+   * Validate API responses without saving data.
+   * When true, no files are written and no directories are created.
+   * Takes precedence over graphOnly if both are true.
+   */
   dryRun: boolean;
+  /**
+   * Save only graph data with redacted content.
+   * Post titles, content, and comment content are replaced with
+   * redacted placeholders while preserving metadata for graph building.
+   * Ignored if dryRun is true.
+   */
   graphOnly: boolean;
 }
 
