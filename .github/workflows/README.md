@@ -21,7 +21,7 @@ This directory contains the manual GitHub Actions workflow for testing the Moltb
 3. Click **"Run workflow"**
 4. Configure the test parameters:
    - **Collection mode:** `influencer-first` (default) or `full`
-   - **Max pages:** Number of pages to fetch (default: 2, recommended: keep ≤ 5)
+   - **Max pages:** Number of pages to fetch (default: 2, recommended: keep <= 5)
    - **Page size:** Items per page (default: 10)
    - **Submolts:** Optional comma-separated list of submolts to test
 
@@ -113,7 +113,7 @@ If the workflow fails (red X):
 
 ## Best Practices
 
-1. **Minimize API calls:** Keep `max_pages` low (≤ 5) to respect API rate limits
+1. **Minimize API calls:** Keep `max_pages` low (<= 5) to respect API rate limits
 2. **Test before major changes:** Run this test before making significant collector changes
 3. **Regular validation:** Run periodically to ensure API compatibility
 4. **Review logs:** Always check the artifacts for detailed output
