@@ -7,7 +7,10 @@
     "analyze": "pnpm --filter @molt-in-the-mist/analyzer run analyze",
     "dev": "pnpm --filter @molt-in-the-mist/site run dev",
     "build": "pnpm --filter @molt-in-the-mist/site run build",
-    "pipeline": "pnpm collect && pnpm analyze && pnpm build"
+    "pipeline": "pnpm collect && pnpm analyze && pnpm build",
+    "dev:whitepaper": "pnpm --filter @molt-in-the-mist/whitepaper run dev",
+    "build:whitepaper": "pnpm --filter @molt-in-the-mist/whitepaper run build",
+    "preview:whitepaper": "pnpm --filter @molt-in-the-mist/whitepaper run preview"
   },
   "pnpm": {
     "onlyBuiltDependencies": ["esbuild"]

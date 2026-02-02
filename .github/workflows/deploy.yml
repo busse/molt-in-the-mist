@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirm_publish:
-        description: 'Type true to publish (will collect live data if secrets exist)'
+        description: 'Type true to publish the whitepaper to GitHub Pages'
         required: true
         type: boolean
 
@@ -18,39 +18,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  collect:
-    if: ${{ inputs.confirm_publish }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - run: pnpm install
-
-      - name: Collect data from Moltbook
-        run: pnpm --filter @molt-in-the-mist/collector run collect --output ./data --mode influencer-first --top 200
-        env:
-          MOLTBOOK_API_KEY: ${{ secrets.MOLTBOOK_API_KEY }}
-
-      - name: Run analysis
-        run: pnpm --filter @molt-in-the-mist/analyzer run analyze --input ./data --output ./packages/site/public/data
-
-      - name: Upload data artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: network-data
-          path: packages/site/public/data/
-
   build:
-    needs: collect
     if: ${{ inputs.confirm_publish }}
     runs-on: ubuntu-latest
     steps:
@@ -67,19 +35,13 @@ jobs:
 
       - run: pnpm install
 
-      - name: Download data artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: network-data
-          path: packages/site/public/data/
-
-      - name: Build site
-        run: pnpm --filter @molt-in-the-mist/site run build
+      - name: Build whitepaper site
+        run: pnpm --filter @molt-in-the-mist/whitepaper run build
 
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: packages/site/dist/
+          path: packages/whitepaper/dist/
 
   deploy:
     needs: build

@@ -15,3 +15,7 @@ skills/
 output/
 scripts/threads-carousel/.font-cache/
 .venv/
+
+# Announcement drafts and social content
+SUBSTACK*.md
+content/

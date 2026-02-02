@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&amp;family=DM+Sans:wght@400;500;600;700&amp;display=swap');
+    </style>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#FAF7F2"/>
+  
+  <!-- Left accent bar -->
+  <rect x="0" y="0" width="8" height="630" fill="#1A1A1A"/>
+  
+  <!-- Top section background -->
+  <rect x="8" y="0" width="1192" height="140" fill="#1A1A1A"/>
+  
+  <!-- Wordmark -->
+  <text x="60" y="85" font-family="'Libre Baskerville', Georgia, serif" font-size="42" font-weight="700" fill="#FFFFFF" letter-spacing="-0.02em">MOLT IN THE MIST</text>
+  
+  <!-- Red rule under wordmark -->
+  <rect x="60" y="100" width="80" height="4" fill="#E03C31"/>
+  
+  <!-- Case Study label -->
+  <text x="60" y="125" font-family="'DM Sans', sans-serif" font-size="14" font-weight="500" fill="#8A8A8A" letter-spacing="0.15em">CASE STUDY</text>
+  
+  <!-- Date -->
+  <text x="1140" y="85" font-family="'DM Sans', sans-serif" font-size="13" font-weight="500" fill="#8A8A8A" text-anchor="end" letter-spacing="0.1em">FEBRUARY 2, 2026</text>
+  
+  <!-- Main title -->
+  <text x="60" y="220" font-family="'Libre Baskerville', Georgia, serif" font-size="48" font-weight="700" fill="#1A1A1A">The Agent Internet</text>
+  
+  <!-- Subtitle line 1 -->
+  <text x="60" y="290" font-family="'Libre Baskerville', Georgia, serif" font-size="32" font-weight="400" fill="#5C5C5C">Security Implications of</text>
+  
+  <!-- Subtitle line 2 -->
+  <text x="60" y="340" font-family="'Libre Baskerville', Georgia, serif" font-size="32" font-weight="400" fill="#5C5C5C">AI-Native Social Networks</text>
+  
+  <!-- Divider line -->
+  <rect x="60" y="380" width="500" height="1" fill="#D4CFC6"/>
+  
+  <!-- Key stats section -->
+  <text x="60" y="430" font-family="'DM Sans', sans-serif" font-size="14" font-weight="700" fill="#1A1A1A" letter-spacing="0.1em">KEY FINDINGS</text>
+  
+  <!-- Stat boxes -->
+  <rect x="60" y="450" width="200" height="70" fill="#F3EDE4"/>
+  <text x="70" y="480" font-family="'DM Sans', sans-serif" font-size="28" font-weight="700" fill="#E03C31">770,000+</text>
+  <text x="70" y="505" font-family="'DM Sans', sans-serif" font-size="11" font-weight="500" fill="#5C5C5C" letter-spacing="0.08em">AI AGENTS ON MOLTBOOK</text>
+  
+  <rect x="280" y="450" width="200" height="70" fill="#F3EDE4"/>
+  <text x="290" y="480" font-family="'DM Sans', sans-serif" font-size="28" font-weight="700" fill="#D4A853">~11 hrs</text>
+  <text x="290" y="505" font-family="'DM Sans', sans-serif" font-size="11" font-weight="500" fill="#5C5C5C" letter-spacing="0.08em">DEVELOPMENT TIME</text>
+  
+  <rect x="500" y="450" width="200" height="70" fill="#F3EDE4"/>
+  <text x="510" y="480" font-family="'DM Sans', sans-serif" font-size="28" font-weight="700" fill="#2C3E50">3,694</text>
+  <text x="510" y="505" font-family="'DM Sans', sans-serif" font-size="11" font-weight="500" fill="#5C5C5C" letter-spacing="0.08em">AGENTS ANALYZED</text>
+  
+  <!-- Author section -->
+  <text x="60" y="580" font-family="'DM Sans', sans-serif" font-size="13" font-weight="500" fill="#8A8A8A" letter-spacing="0.08em">CHRIS BUSSE · BUSSE.IO</text>
+  
+  <!-- GitHub icon area -->
+  <rect x="1040" y="540" width="100" height="40" fill="#1A1A1A" rx="2"/>
+  <text x="1090" y="567" font-family="'DM Sans', sans-serif" font-size="12" font-weight="600" fill="#FFFFFF" text-anchor="middle" letter-spacing="0.06em">GITHUB</text>
+  
+  <!-- Bottom accent -->
+  <rect x="8" y="620" width="1192" height="10" fill="#1A1A1A"/>
+</svg>
