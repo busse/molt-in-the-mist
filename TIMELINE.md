@@ -4,7 +4,7 @@
 **Total Commits**: 2 (1 substantive)  
 **Total Files Created**: 70  
 **Lines of Code**: ~13,000  
-**Development Time**: ~18 hours
+**Development Time**: ~11 hours
 
 ---
 
@@ -565,7 +565,8 @@ packages/site/public/data/*.json (gitignored)
 | Editorial Styling | site | 1267 | Low | Medium |
 | Image Generation | scripts | 1226 | Medium | Medium |
 
-**Total Functional LOC**: ~4,857 (TypeScript) + ~2,300 (Python) = ~7,157
+**Functional Code LOC**: ~4,857 (TypeScript) + ~2,300 (Python) = ~7,157  
+**Total LOC** (including CSS, config, docs): ~13,079
 
 ### **Design Patterns Used**
 
@@ -639,8 +640,8 @@ packages/site/public/data/*.json (gitignored)
 |--------|-------|-------|
 | **Development Time** | ~11 hours | Estimated from commit timestamp |
 | **Files Created** | 70 | Initial commit |
-| **LOC Written** | ~13,000 | Mix of code, config, docs |
-| **LOC/Hour** | ~1,182 | Indicates AI assistance |
+| **LOC Written** | ~13,079 | Mix of code, config, docs |
+| **LOC/Hour** | ~1,189 | Indicates AI assistance |
 | **Packages Built** | 3 | Full-stack system |
 | **Features Implemented** | 12+ | Major functional components |
 
