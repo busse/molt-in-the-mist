@@ -38,7 +38,7 @@ Curious and creative researchers who want a responsible framework for:
 pnpm install
 
 # Register an agent and request an API key
-pnpm register -- --name "my-agent" --description "Social graph analysis agent" --save
+pnpm register --name "my-agent" --description "Social graph analysis agent" --save
 
 # Collect data from Moltbook (needs API key)
 export MOLTBOOK_API_KEY=moltbook_...
